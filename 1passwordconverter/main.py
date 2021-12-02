@@ -22,6 +22,7 @@ def main(file):
             print(f"Processing vault: {vault_name}")
             with open(f"{vault_name}.csv", "w") as csv_file:
                 writer = csv.writer(csv_file)
+                writer.writerow(["Title", "URL", "Username", "Password"])
                 for item in vault["items"]:
                     item = item["item"]
                     overview = item["overview"]
@@ -30,7 +31,7 @@ def main(file):
                     print(f"Processing item: {title}")
                     username, password = None, None
                     for field in item["details"]["loginFields"]:
-                        if not hasattr(field, "designation"):
+                        if "designation" not in field:
                             continue
                         if field["designation"] == "username":
                             username = field["value"]

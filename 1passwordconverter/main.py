@@ -1,3 +1,4 @@
+from importlib.machinery import FileFinder
 import click
 import csv
 import json
@@ -13,28 +14,90 @@ import json
     prompt="Which file?",
     type=click.File("r"),
 )
-def main(file):
-    data = json.load(file)
-    for account in data["accounts"]:
-        print(f"Processing account: {account['attrs']['name']}")
-        for vault in account["vaults"]:
-            vault_name = vault["attrs"]["name"]
-            print(f"Processing vault: {vault_name}")
-            with open(f"{vault_name}.csv", "w") as csv_file:
-                writer = csv.writer(csv_file)
-                writer.writerow(["Title", "URL", "Username", "Password"])
+@click.option(
+    "verbose",
+    "--verbose",
+    "-v",
+    is_flag=True,
+    help="Verbose output",
+)
+def main(file: click.File("r"), verbose: bool) -> None:
+    with open("export.csv", "w") as csv_file:
+        data = json.load(file)
+        writer = csv.writer(csv_file)
+        writer.writerow(
+            [
+                "folder",
+                "favorite",
+                "type",
+                "name",
+                "notes",
+                "fields",
+                "reprompt",
+                "login_uri",
+                "login_username",
+                "login_password",
+                "login_totp",
+            ]
+        )
+
+        for account in data["accounts"]:
+            print(f"Processing account: {account['attrs']['name']}")
+
+            for vault in account["vaults"]:
+                folder = vault["attrs"]["name"]
+                print(f"Processing folder: {folder}")
+
                 for item in vault["items"]:
-                    item = item["item"]
+                    # 1Password sometimes nests an item inside an item
+                    if hasattr(item, "item"):
+                        item = item["item"]
+
+                    # Root level items
+                    favorite = item["favIndex"]
+
+                    # Overview Subsection
                     overview = item["overview"]
-                    title = overview["title"]
-                    url = overview["url"]
-                    print(f"Processing item: {title}")
-                    username, password = None, None
-                    for field in item["details"]["loginFields"]:
+                    name = overview["title"]
+                    login_uri = overview["url"]
+
+                    if verbose:
+                        print(f"Processing item: {name}")
+
+                    # Details Subsection
+                    details = item["details"]
+                    notes = details["notesPlain"] if "notesPlain" in details else None
+
+                    login_username, login_password = None, None
+                    for field in details["loginFields"]:
                         if "designation" not in field:
                             continue
                         if field["designation"] == "username":
-                            username = field["value"]
+                            login_username = field["value"]
                         if field["designation"] == "password":
-                            password = field["value"]
-                    writer.writerow([title, url, username, password])
+                            login_password = field["value"]
+
+                    login_totp = None
+                    for section in details["sections"]:
+                        fields = section["fields"]
+                        if len(fields) == 0:
+                            continue
+                        for field in fields:
+                            value = field["value"]
+                            login_totp = value["totp"] if "totp" in value else None
+
+                    writer.writerow(
+                        [
+                            folder,
+                            favorite,
+                            "login",
+                            name,
+                            notes,
+                            None,
+                            0,
+                            login_uri,
+                            login_username,
+                            login_password,
+                            login_totp,
+                        ]
+                    )

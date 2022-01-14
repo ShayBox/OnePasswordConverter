@@ -1,4 +1,4 @@
-# 1PasswordConverter
+# OnePasswordConverter
 Convert [1pux] to [Bitwarden] CSV
 
 1Password this new export format `1pux` which stands for `1Password Unencrypted Export` format, or `1Password User eXport`  

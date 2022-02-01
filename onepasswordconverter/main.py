@@ -18,7 +18,7 @@ import json
     "--verbose",
     "-v",
     is_flag=True,
-    help="Verbose output",
+    help="Verbose output (WARNING! Prints passwords to stdout)",
 )
 def main(file: click.File("r"), verbose: bool) -> None:
     with open("export.csv", "w") as csv_file:
@@ -52,6 +52,12 @@ def main(file: click.File("r"), verbose: bool) -> None:
                     if hasattr(item, "item"):
                         item = item["item"]
 
+                    if verbose:
+                        print(item)
+                        print("\033[93mWARNING! This is a verbose output!\033[0m")
+                        print("\033[93mThere may be private information in this output!\033[0m")
+                        print("\033[93mRemove any sensitive information before sharing!\033[0m")
+
                     # Root level items
                     favorite = item["favIndex"] if hasattr(item, "favIndex") else 0
 
@@ -60,8 +66,6 @@ def main(file: click.File("r"), verbose: bool) -> None:
                     name = overview["title"]
                     login_uri = overview["url"]
 
-                    if verbose:
-                        print(f"Processing item: {name}")
 
                     # Details Subsection
                     details = item["details"]

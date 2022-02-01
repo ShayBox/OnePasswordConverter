@@ -52,6 +52,9 @@ def main(file: click.File("r"), verbose: bool) -> None:
                     if hasattr(item, "item"):
                         item = item["item"]
 
+                    if item is None:
+                        continue
+
                     if verbose:
                         print(item)
                         print("\033[93mWARNING! This is a verbose output!\033[0m")

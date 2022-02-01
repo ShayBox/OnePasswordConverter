@@ -1,6 +1,21 @@
-import click
 import csv
 import json
+
+import click
+
+
+# Append index to duplicated keys
+# https://stackoverflow.com/a/29323197
+def fix_dup_keys(ordered_pairs):
+    index = 0
+    dictionary = {}
+    for key, value in ordered_pairs:
+        if key in dictionary:
+            dictionary[key + str(index)] = value
+            index += 1
+        else:
+            dictionary[key] = value
+    return dictionary
 
 
 @click.command()
@@ -22,7 +37,7 @@ import json
 )
 def main(file: click.File("r"), verbose: bool) -> None:
     with open("export.csv", "w") as csv_file:
-        data = json.load(file)
+        data = json.load(file, object_pairs_hook=fix_dup_keys)
         writer = csv.writer(csv_file)
         writer.writerow(
             [
@@ -47,14 +62,12 @@ def main(file: click.File("r"), verbose: bool) -> None:
                 folder = vault["attrs"]["name"]
                 print(f"Processing folder: {folder}")
 
-                for item in vault["items"]:
-                    # 1Password sometimes nests an item inside an item
-                    if hasattr(item, "item"):
-                        item = item["item"]
+                # 1Password sometimes nests an item inside an item
+                iterable = vault["items"]
+                if "item" in iterable[0]:
+                    iterable = iterable[0].values()
 
-                    if item is None:
-                        continue
-
+                for item in iterable:
                     if verbose:
                         print(item)
                         print("\033[93mWARNING! This is a verbose output!\033[0m")
@@ -62,16 +75,15 @@ def main(file: click.File("r"), verbose: bool) -> None:
                         print("\033[93mRemove any sensitive information before sharing!\033[0m")
 
                     # Root level items
-                    favorite = item["favIndex"] if hasattr(item, "favIndex") else 0
+                    favorite = item["favIndex"] if "favIndex" in item else 0
 
                     # Overview Subsection
                     overview = item["overview"]
                     name = overview["title"]
                     login_uri = overview["url"]
 
-
                     # Details Subsection
-                    details = item["details"]
+                    details = item["details"] if "details" in item else {}
                     notes = details["notesPlain"] if "notesPlain" in details else None
 
                     login_username, login_password = None, None

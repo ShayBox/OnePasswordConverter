@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "OnePasswordConverter"
-version = "0.2.0"
+version = "0.2.1"
 description = "Convert .1pux to .csv"
 authors = ["Shayne Hartford <shaybox@shaybox.com>"]
 
@@ -17,3 +17,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 1passconv = "onepasswordconverter.main:main"
+
+[tool.black]
+line-length = 120

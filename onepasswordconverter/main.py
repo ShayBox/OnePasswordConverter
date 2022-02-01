@@ -53,7 +53,7 @@ def main(file: click.File("r"), verbose: bool) -> None:
                         item = item["item"]
 
                     # Root level items
-                    favorite = item["favIndex"]
+                    favorite = item["favIndex"] if hasattr(item, "favIndex") else 0
 
                     # Overview Subsection
                     overview = item["overview"]

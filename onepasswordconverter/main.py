@@ -62,7 +62,7 @@ def main(file: click.File("r"), verbose: bool) -> None:
                 folder = vault["attrs"]["name"]
                 print(f"Processing folder: {folder}")
 
-                # 1Password sometimes nests an item inside an item
+                # 1Password sometimes puts items inside an object with duplicated keys
                 iterable = vault["items"]
                 if "item" in iterable[0]:
                     iterable = iterable[0].values()
@@ -70,7 +70,7 @@ def main(file: click.File("r"), verbose: bool) -> None:
                 for item in iterable:
                     if verbose:
                         print(item)
-                        print("\033[93mWARNING! This is a verbose output!\033[0m")
+                        print("\033[93mWARNING! This is verbose output!\033[0m")
                         print("\033[93mThere may be private information in this output!\033[0m")
                         print("\033[93mRemove any sensitive information before sharing!\033[0m")
 
@@ -78,15 +78,19 @@ def main(file: click.File("r"), verbose: bool) -> None:
                     favorite = item["favIndex"] if "favIndex" in item else 0
 
                     # Overview Subsection
+                    if "overview" not in item:
+                        print("\033[93mWARNING! Overview is empty! Skipping item\033[0m")
+                        continue
+
                     overview = item["overview"]
-                    name = overview["title"]
-                    login_uri = overview["url"]
+                    name = overview["title"] if "title" in overview else ""
+                    login_uri = overview["url"] if "url" in overview else ""
 
                     # Details Subsection
                     details = item["details"] if "details" in item else {}
-                    notes = details["notesPlain"] if "notesPlain" in details else None
+                    notes = details["notesPlain"] if "notesPlain" in details else ""
 
-                    login_username, login_password = None, None
+                    login_username, login_password = "", ""
                     for field in details["loginFields"]:
                         if "designation" not in field:
                             continue
@@ -95,14 +99,14 @@ def main(file: click.File("r"), verbose: bool) -> None:
                         if field["designation"] == "password":
                             login_password = field["value"]
 
-                    login_totp = None
+                    login_totp = ""
                     for section in details["sections"]:
                         fields = section["fields"]
                         if len(fields) == 0:
                             continue
                         for field in fields:
                             value = field["value"]
-                            login_totp = value["totp"] if "totp" in value else None
+                            login_totp = value["totp"] if "totp" in value else ""
 
                     writer.writerow(
                         [
@@ -111,7 +115,7 @@ def main(file: click.File("r"), verbose: bool) -> None:
                             "login",
                             name,
                             notes,
-                            None,
+                            "",
                             0,
                             login_uri,
                             login_username,
